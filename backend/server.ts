@@ -35,7 +35,9 @@ app.get('/api/products', async () => {
 
     const result = products.map((p: any) => {
         const sources = sourcesStmt.all(p.id);
-        return { ...p, sources };
+        const prices = sources.filter((s: any) => s.lastPriceCents != null).map((s: any) => s.lastPriceCents);
+        const bestPrice = prices.length > 0 ? Math.min(...prices) : null;
+        return { ...p, sources, bestPrice, sourceCount: sources.length };
     });
     return { products: result };
 });
@@ -88,8 +90,6 @@ app.post('/api/locations', async (req, reply) => {
         `INSERT INTO locations (name, postal_code, latitude, longitude, radius_km) VALUES (?, ?, ?, ?, ?)`
     ).run(body.name ?? null, body.postalCode ?? null, body.latitude, body.longitude, body.radiusKm);
     return { id: Number(res.lastInsertRowid) };
-});
-
 app.get('/api/price-history/:sourceId', async (req, reply) => {
     const params = req.params as { sourceId?: string };
     const sourceId = Number(params.sourceId);
@@ -102,6 +102,28 @@ app.get('/api/price-history/:sourceId', async (req, reply) => {
     ).all(sourceId);
     return { history: rows };
 });
+
+app.delete('/api/products/:id', async (req, reply) => {
+    const params = req.params as { id?: string };
+    const id = Number(params.id);
+    if (!id) {
+        reply.code(400); return { error: 'invalid id' };
+    }
+    db.prepare('DELETE FROM products WHERE id = ?').run(id);
+    return { ok: true };
+});
+
+app.delete('/api/sources/:id', async (req, reply) => {
+    const params = req.params as { id?: string };
+    const id = Number(params.id);
+    if (!id) {
+        reply.code(400); return { error: 'invalid id' };
+    }
+    db.prepare('DELETE FROM sources WHERE id = ?').run(id);
+    return { ok: true };
+});
+
+app.register(fastifyStatic, {
 
 app.register(fastifyStatic, {
     root: publicDir,
