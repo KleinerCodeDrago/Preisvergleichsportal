@@ -1,0 +1,22 @@
+{
+  "name": "preisvergleichsportal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "tsx scripts/setup_test_data.ts",
+    "run:daily": "tsx scripts/run_daily.ts",
+    "gotify:up": "docker compose -f docker-compose.gotify.yml up -d",
+    "gotify:down": "docker compose -f docker-compose.gotify.yml down",
+    "gotify:token": "tsx scripts/create_gotify_token.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.0.0",
+    "playwright": "^1.42.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
