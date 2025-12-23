@@ -8,11 +8,14 @@
     "run:daily": "tsx scripts/run_daily.ts",
     "gotify:up": "docker compose -f docker-compose.gotify.yml up -d",
     "gotify:down": "docker compose -f docker-compose.gotify.yml down",
-    "gotify:token": "tsx scripts/create_gotify_token.ts"
+    "gotify:token": "tsx scripts/create_gotify_token.ts",
+    "dev:server": "tsx backend/server.ts"
   },
   "dependencies": {
     "better-sqlite3": "^9.0.0",
-    "playwright": "^1.42.0"
+    "fastify": "^4.26.2",
+    "playwright": "^1.42.0",
+    "@fastify/static": "^6.12.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

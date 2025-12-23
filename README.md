@@ -39,6 +39,12 @@ npm run run:daily
 
 GoTiFy-UI: http://localhost:8008 (Login: admin/admin)
 
+### 5. API + Frontend starten
+```bash
+npm run dev:server
+```
+Öffne dann http://localhost:3000 (UI lädt Daten über die API).
+
 ## Verfügbare Skripte
 
 - `npm run setup` — Erstellt DB + Test-Produkt/Source
@@ -46,6 +52,7 @@ GoTiFy-UI: http://localhost:8008 (Login: admin/admin)
 - `npm run gotify:up` — Startet GoTiFy-Container
 - `npm run gotify:down` — Stoppt GoTiFy-Container
 - `npm run gotify:token` — Erstellt GoTiFy-App-Token
+- `npm run dev:server` — Startet API + statisches Frontend
 
 ## Projekt-Struktur
 

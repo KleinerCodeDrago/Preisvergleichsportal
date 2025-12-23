@@ -1,0 +1,8 @@
+node_modules/
+preis.db
+package-lock.json
+.gotify-token
+gotify-data/
+.cache/
+.env
+npm-debug.log*

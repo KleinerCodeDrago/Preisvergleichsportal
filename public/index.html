@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preisvergleichsportal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --card: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --accent-2: #22d3ee;
+      --danger: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(56,189,248,0.08), transparent 25%),
+                  radial-gradient(circle at 80% 10%, rgba(34,211,238,0.08), transparent 20%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: rgba(15,23,42,0.9);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    h1 { margin: 0; font-size: 20px; }
+    main {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; }
+    }
+    section {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+    .section-title { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
+    form { display: grid; gap: 8px; }
+    label { font-size: 12px; color: var(--muted); }
+    input, select, button {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #0b1220;
+      color: var(--text);
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      border: none;
+      font-weight: 600;
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(34,211,238,0.28); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px 6px; font-size: 13px; }
+    th { color: var(--muted); font-weight: 600; }
+    tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: rgba(56,189,248,0.12);
+      color: var(--accent);
+      margin-right: 6px;
+    }
+    .grid-two { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 10px; }
+    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .chart-box { background: var(--panel); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; }
+    .flex { display: flex; gap: 8px; align-items: center; }
+    .inline-btn { width: auto; padding: 8px 12px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Preisvergleichsportal</h1>
+    <div class="muted">Live-Daten · GoTiFy Push · Täglicher Crawl</div>
+  </header>
+  <main>
+    <section>
+      <div class="card-head"><h2 class="section-title">Produkte & Quellen</h2></div>
+      <div id="products"></div>
+    </section>
+    <section>
+      <div class="card-head"><h2 class="section-title">Preisverlauf</h2><span class="muted" id="chart-label">Wähle eine Quelle</span></div>
+      <div class="chart-box"><canvas id="priceChart" height="180"></canvas></div>
+    </section>
+    <section>
+      <div class="card-head"><h2 class="section-title">Produkt anlegen</h2></div>
+      <form id="form-product">
+        <div>
+          <label>Name</label>
+          <input name="name" placeholder="z.B. Paperless Frame 7" required />
+        </div>
+        <div>
+          <label>Bild-URL (optional)</label>
+          <input name="imageUrl" placeholder="https://..." />
+        </div>
+        <button type="submit">Produkt speichern</button>
+      </form>
+    </section>
+    <section>
+      <div class="card-head"><h2 class="section-title">Quelle anlegen</h2></div>
+      <form id="form-source">
+        <div>
+          <label>Produkt</label>
+          <select name="productId" required></select>
+        </div>
+        <div>
+          <label>URL</label>
+          <input name="url" placeholder="https://shop.tld/artikel" required />
+        </div>
+        <div>
+          <label>Typ</label>
+          <select name="sourceType" required>
+            <option value="shop">Shop</option>
+            <option value="marketplace">Marktplatz</option>
+            <option value="classified">Kleinanzeige</option>
+          </select>
+        </div>
+        <div>
+          <label>Versand möglich?</label>
+          <select name="supportsShipping">
+            <option value="1">Ja</option>
+            <option value="0">Nein</option>
+          </select>
+        </div>
+        <button type="submit">Quelle speichern</button>
+      </form>
+    </section>
+    <section>
+      <div class="card-head"><h2 class="section-title">Ort anlegen</h2></div>
+      <form id="form-location">
+        <div>
+          <label>Name</label>
+          <input name="name" placeholder="z.B. Berlin Mitte" />
+        </div>
+        <div>
+          <label>PLZ</label>
+          <input name="postalCode" placeholder="10115" />
+        </div>
+        <div class="grid-two">
+          <div>
+            <label>Latitude</label>
+            <input name="latitude" type="number" step="0.000001" required />
+          </div>
+          <div>
+            <label>Longitude</label>
+            <input name="longitude" type="number" step="0.000001" required />
+          </div>
+        </div>
+        <div>
+          <label>Radius (km)</label>
+          <input name="radiusKm" type="number" step="0.1" required />
+        </div>
+        <button type="submit">Ort speichern</button>
+      </form>
+    </section>
+  </main>
+<script>
+const productsEl = document.querySelector('#products');
+const productSelect = document.querySelector('#form-source select[name="productId"]');
+const chartLabel = document.querySelector('#chart-label');
+let chart;
+
+async function fetchJson(url, options={}) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function formatPrice(cents, currency='EUR') {
+  if (cents == null) return '–';
+  return (cents/100).toLocaleString('de-DE', { style: 'currency', currency });
+}
+
+async function loadData() {
+  const [products, locations] = await Promise.all([
+    fetchJson('/api/products'),
+    fetchJson('/api/locations'),
+  ]);
+  renderProducts(products.products || []);
+  renderProductSelect(products.products || []);
+}
+
+function renderProducts(list) {
+  if (!list.length) { productsEl.innerHTML = '<div class="muted">Noch keine Produkte</div>'; return; }
+  const html = list.map(p => {
+    const sourceRows = (p.sources || []).map(s => {
+      const price = formatPrice(s.lastPriceCents, 'EUR');
+      const ship = s.lastIsLocal ? '<span class="pill">Lokal</span>' : '<span class="pill" style="background:rgba(34,197,94,0.15);color:#4ade80;">Versand</span>';
+      const when = s.lastCapturedAt ? new Date(s.lastCapturedAt).toLocaleString() : '–';
+      return `<tr>
+        <td>${s.sourceType}</td>
+        <td><a href="${s.url}" target="_blank">${s.url}</a></td>
+        <td>${price}</td>
+        <td>${ship}</td>
+        <td>${when}</td>
+        <td><button class="inline-btn" data-chart="${s.id}">Chart</button></td>
+      </tr>`;
+    }).join('');
+    return `<div class="chart-box" style="margin-bottom:10px;">
+      <div class="card-head"><div><strong>${p.name}</strong></div><div class="muted">${p.sources?.length || 0} Quellen</div></div>
+      <table>
+        <thead><tr><th>Typ</th><th>URL</th><th>Preis</th><th>Kategorie</th><th>Zuletzt</th><th></th></tr></thead>
+        <tbody>${sourceRows || '<tr><td colspan="6" class="muted">Keine Quellen</td></tr>'}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+  productsEl.innerHTML = html;
+  productsEl.querySelectorAll('button[data-chart]').forEach(btn => {
+    btn.addEventListener('click', () => loadChart(btn.dataset.chart));
+  });
+}
+
+function renderProductSelect(list) {
+  productSelect.innerHTML = list.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+}
+
+async function loadChart(sourceId) {
+  chartLabel.textContent = `Quelle ${sourceId}`;
+  const data = await fetchJson(`/api/price-history/${sourceId}`);
+  const points = (data.history || []).reverse();
+  const labels = points.map(p => new Date(p.capturedAt).toLocaleString());
+  const values = points.map(p => p.priceValueCents / 100);
+  if (chart) chart.destroy();
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Preis',
+        data: values,
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56,189,248,0.15)',
+        tension: 0.25,
+        fill: true,
+        pointRadius: 3,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#9ca3af' } },
+        y: { ticks: { color: '#9ca3af' } }
+      }
+    }
+  });
+}
+
+// Forms
+const formProduct = document.querySelector('#form-product');
+formProduct.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = new FormData(formProduct);
+  await fetchJson('/api/products', { method: 'POST', body: JSON.stringify({
+    name: form.get('name'),
+    imageUrl: form.get('imageUrl') || null,
+  })});
+  formProduct.reset();
+  await loadData();
+});
+
+const formSource = document.querySelector('#form-source');
+formSource.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = new FormData(formSource);
+  await fetchJson('/api/sources', { method: 'POST', body: JSON.stringify({
+    productId: Number(form.get('productId')),
+    url: form.get('url'),
+    sourceType: form.get('sourceType'),
+    supportsShipping: form.get('supportsShipping') === '1',
+    active: true,
+  })});
+  formSource.reset();
+  await loadData();
+});
+
+const formLocation = document.querySelector('#form-location');
+formLocation.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = new FormData(formLocation);
+  await fetchJson('/api/locations', { method: 'POST', body: JSON.stringify({
+    name: form.get('name') || null,
+    postalCode: form.get('postalCode') || null,
+    latitude: Number(form.get('latitude')),
+    longitude: Number(form.get('longitude')),
+    radiusKm: Number(form.get('radiusKm')),
+  })});
+  formLocation.reset();
+  await loadData();
+});
+
+loadData().catch(err => {
+  console.error(err);
+  alert('Fehler beim Laden: ' + err.message);
+});
+</script>
+</body>
+</html>
